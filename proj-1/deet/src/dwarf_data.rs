@@ -45,6 +45,35 @@ impl DwarfData {
     }
 
     #[allow(dead_code)]
+    pub fn get_variable_with_name_and_addr(&self, name: &str, addr: &usize) -> Option<Variable> {
+        // find in current frame
+        let function_name = self.get_function_from_addr(*addr)?;
+        let target_file = self.files.get(0)?;
+        let function = target_file
+            .functions
+            .iter()
+            .find(|func| func.name == function_name)?;
+        if let Some(variable) = function.variables.iter().find(|v| v.name == name) {
+            return Some(variable.clone());
+        }
+
+        self.get_global_variable_with_name(name)
+    }
+
+    #[allow(dead_code)]
+    pub fn get_global_variable_with_name(&self, name: &str) -> Option<Variable> {
+        // find in global variables
+        let target_file = self.files.get(0)?;
+        Some(
+            target_file
+                .global_variables
+                .iter()
+                .find(|v| v.name == name)?
+                .clone(),
+        )
+    }
+
+    #[allow(dead_code)]
     fn get_target_file(&self, file: &str) -> Option<&File> {
         self.files.iter().find(|f| {
             f.name == file || (!file.contains("/") && f.name.ends_with(&format!("/{}", file)))
@@ -222,5 +251,3 @@ impl fmt::Display for Line {
         write!(f, "{}:{}", self.file, self.number)
     }
 }
-
-

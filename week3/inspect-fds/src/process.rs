@@ -1,6 +1,6 @@
 use crate::open_file::OpenFile;
-#[allow(unused)] // TODO: delete this line for Milestone 3
 use std::fs;
+use std::io;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Process {
@@ -10,9 +10,35 @@ pub struct Process {
 }
 
 impl Process {
-    #[allow(unused)] // TODO: delete this line for Milestone 1
     pub fn new(pid: usize, ppid: usize, command: String) -> Process {
         Process { pid, ppid, command }
+    }
+
+    pub fn print(&self) {
+        println!(
+            "========= \"{}\" (pid: {}, ppid: {}) =========",
+            self.command, self.pid, self.ppid
+        );
+
+        match self.list_open_files() {
+            None => println!(
+                "Warning: could not inspect file descriptors for this process! \
+            It might have exited just as we were about to look at its fd table, \
+            or it might have exited a while ago and is waiting for the parent \
+            to reap it."
+            ),
+            Some(open_files) => {
+                for (fd, file) in open_files {
+                    println!(
+                        "{:<4} {:<15} cursor: {:<4} {}",
+                        fd,
+                        format!("({})", file.access_mode),
+                        file.cursor,
+                        file.colorized_name(),
+                    );
+                }
+            }
+        }
     }
 
     /// This function returns a list of file descriptor numbers for this Process, if that
@@ -20,10 +46,23 @@ impl Process {
     /// information will commonly be unavailable if the process has exited. (Zombie processes
     /// still have a pid, but their resources have already been freed, including the file
     /// descriptor table.)
-    #[allow(unused)] // TODO: delete this line for Milestone 3
     pub fn list_fds(&self) -> Option<Vec<usize>> {
-        // TODO: implement for Milestone 3
-        unimplemented!();
+        let fdt_file = format!("/proc/{}/fd", self.pid);
+        let fdt = fs::read_dir(fdt_file).ok()?;
+        let fds = fdt
+            .map(|res| {
+                res.map(|entry| {
+                    entry
+                        .file_name()
+                        .into_string()
+                        .expect("wrong string encoding")
+                        .parse::<usize>()
+                        .expect("wrong string format")
+                })
+            })
+            .collect::<Result<Vec<_>, io::Error>>()
+            .ok()?;
+        Some(fds)
     }
 
     /// This function returns a list of (fdnumber, OpenFile) tuples, if file descriptor

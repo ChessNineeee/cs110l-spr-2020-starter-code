@@ -71,7 +71,6 @@ fn parse_ps_line(line: &str) -> Result<Process, Error> {
 /// This function takes a pid and returns a Process struct for the specified process, or None if
 /// the specified pid doesn't exist. An Error is only returned if ps cannot be executed or
 /// produces unexpected output format.
-#[allow(unused)] // TODO: delete this line for Milestone 1
 fn get_process(pid: usize) -> Result<Option<Process>, Error> {
     // Run ps to find the specified pid. We use the ? operator to return an Error if executing ps
     // fails, or if it returns non-utf-8 output. (The extra Error traits above are used to
